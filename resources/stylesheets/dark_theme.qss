@@ -1,0 +1,239 @@
+/* ============================================================
+   Interactive Pitch Analysis Viewer — Dark Theme
+   Tesla-adjacent dark aesthetic: deep grays, cyan accents,
+   minimal chrome, high contrast on video content.
+   ============================================================ */
+
+/* ── Base ─────────────────────────────────────────────────── */
+QWidget {
+    background-color: #0f0f17;
+    color: #d0d0e0;
+    font-family: "Inter", "SF Pro Display", "Helvetica Neue", sans-serif;
+    font-size: 11px;
+}
+
+QMainWindow {
+    background-color: #0a0a12;
+}
+
+/* ── Menu Bar ─────────────────────────────────────────────── */
+QMenuBar {
+    background-color: #12121e;
+    color: #b0b0c8;
+    border-bottom: 1px solid #242436;
+    padding: 2px 0;
+}
+
+QMenuBar::item {
+    padding: 4px 12px;
+    border-radius: 3px;
+}
+
+QMenuBar::item:selected {
+    background-color: #1e1e32;
+    color: #e0e0f8;
+}
+
+QMenu {
+    background-color: #1a1a28;
+    color: #c0c0d8;
+    border: 1px solid #303048;
+    border-radius: 4px;
+    padding: 4px 0;
+}
+
+QMenu::item {
+    padding: 6px 24px 6px 16px;
+}
+
+QMenu::item:selected {
+    background-color: #2a2a48;
+    color: #ffffff;
+}
+
+QMenu::separator {
+    height: 1px;
+    background: #303048;
+    margin: 4px 8px;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+QToolBar {
+    background-color: #12121e;
+    border-bottom: 1px solid #242436;
+    spacing: 2px;
+    padding: 2px 6px;
+}
+
+QToolButton {
+    color: #a0a8c0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-weight: 500;
+}
+
+QToolButton:hover {
+    background-color: #1e2040;
+    border-color: #303060;
+    color: #d0d8f0;
+}
+
+QToolButton:pressed {
+    background-color: #283060;
+}
+
+QToolButton:checked {
+    background-color: #1a2850;
+    border-color: #3060a0;
+    color: #60a0e0;
+}
+
+/* ── Status Bar ───────────────────────────────────────────── */
+QStatusBar {
+    background-color: #0c0c18;
+    color: #707090;
+    border-top: 1px solid #1e1e30;
+    font-size: 10px;
+}
+
+QStatusBar QLabel {
+    color: #808098;
+    padding: 0 8px;
+    background: transparent;
+}
+
+/* ── Dock Widgets ─────────────────────────────────────────── */
+QDockWidget {
+    color: #9090b0;
+    titlebar-close-icon: none;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+QDockWidget::title {
+    background-color: #161624;
+    padding: 6px 10px;
+    border-bottom: 1px solid #242436;
+    text-transform: uppercase;
+}
+
+QDockWidget::close-button, QDockWidget::float-button {
+    background: transparent;
+    border: none;
+}
+
+/* ── Scroll Areas ─────────────────────────────────────────── */
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+
+QScrollBar:vertical {
+    background: #161620;
+    width: 6px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:vertical {
+    background: #383850;
+    border-radius: 3px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #4848a0;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+/* ── Push Buttons ─────────────────────────────────────────── */
+QPushButton {
+    background-color: #1e2240;
+    color: #8090c0;
+    border: 1px solid #2a3060;
+    border-radius: 5px;
+    padding: 5px 14px;
+    font-weight: 500;
+}
+
+QPushButton:hover {
+    background-color: #283070;
+    color: #a0c0ff;
+    border-color: #4060b0;
+}
+
+QPushButton:pressed {
+    background-color: #1a2060;
+}
+
+QPushButton:disabled {
+    color: #404060;
+    border-color: #202035;
+}
+
+/* ── Labels ───────────────────────────────────────────────── */
+QLabel {
+    color: #b0b0c8;
+    background: transparent;
+}
+
+/* ── Frames ───────────────────────────────────────────────── */
+QFrame[frameShape="4"],  /* StyledPanel */
+QFrame[frameShape="6"] { /* Panel */
+    border: 1px solid #282838;
+    border-radius: 6px;
+    background-color: #141420;
+}
+
+/* ── Tooltip ──────────────────────────────────────────────── */
+QToolTip {
+    background-color: #1e1e30;
+    color: #d0d0f0;
+    border: 1px solid #404060;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 10px;
+}
+
+/* ── Progress Bar ─────────────────────────────────────────── */
+QProgressBar {
+    background-color: #1a1a28;
+    border: 1px solid #303048;
+    border-radius: 4px;
+    text-align: center;
+    color: #8090b0;
+    font-size: 9px;
+}
+
+QProgressBar::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                stop:0 #0066cc, stop:1 #0099ff);
+    border-radius: 3px;
+}
+
+/* ── Tab Widget (for docked panels) ──────────────────────── */
+QTabBar::tab {
+    background: #161620;
+    color: #707088;
+    border: 1px solid #242436;
+    padding: 4px 12px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+
+QTabBar::tab:selected {
+    background: #1e1e30;
+    color: #a0a8c8;
+    border-bottom-color: #1e1e30;
+}
+
+QTabBar::tab:hover {
+    background: #1a1a28;
+    color: #b0b8d0;
+}
