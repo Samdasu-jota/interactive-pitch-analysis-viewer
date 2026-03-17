@@ -5,6 +5,7 @@
 #include <QResizeEvent>
 #include <QContextMenuEvent>
 #include <QMenu>
+#include <QMouseEvent>
 
 VideoPlayerWidget::VideoPlayerWidget(QWidget* parent)
     : QWidget(parent) {
@@ -76,6 +77,11 @@ void VideoPlayerWidget::resizeEvent(QResizeEvent* /*event*/) {
 void VideoPlayerWidget::updateDestRect() {
     destRect_ = CoordMapper::letterboxRect(
         videoWidth_, videoHeight_, width(), height());
+}
+
+void VideoPlayerWidget::mousePressEvent(QMouseEvent* event) {
+    if (event->button() == Qt::LeftButton)
+        emit clicked();
 }
 
 void VideoPlayerWidget::contextMenuEvent(QContextMenuEvent* event) {

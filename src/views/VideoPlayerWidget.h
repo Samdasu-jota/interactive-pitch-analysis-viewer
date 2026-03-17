@@ -40,12 +40,13 @@ public slots:
     void clearFrame();
 
 signals:
-    // Emitted when user right-clicks → "Export Frame"
+    void clicked();                          // left-click → toggle play/pause
     void exportFrameRequested(int frameNumber);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
     QSize sizeHint() const override { return {640, 360}; }
 

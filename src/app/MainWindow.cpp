@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "../views/SpeedControlWidget.h"
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
@@ -13,6 +14,7 @@
 #include <QMimeData>
 #include <QUrl>
 #include <QMessageBox>
+#include <QFileDialog>
 #include <QApplication>
 #include <QFile>
 #include <QDebug>
@@ -38,13 +40,15 @@ MainWindow::MainWindow(const AppConfig& config, QWidget* parent)
 
     // ── Presenters ────────────────────────────────────────────────────────────
     MainPresenter::Views views{
-        videoPlayer_, timeline_, metricsPanel_, matchPanel_
+        videoPlayer_, timeline_, metricsPanel_
     };
     mainPresenter_ = std::make_unique<MainPresenter>(
         sessionModel_, apiClient_, views, this);
 
     comparisonPresenter_ = std::make_unique<ComparisonPresenter>(
-        sessionModel_, comparisonView_, apiClient_, this);
+        sessionModel_, comparisonView_,
+        metricsPanel_, comparisonMetricsPanel_,
+        apiClient_, this);
 
     // ── Wire signals ──────────────────────────────────────────────────────────
     connectSignals();
@@ -85,13 +89,16 @@ void MainWindow::buildCentralWidget() {
 
 void MainWindow::buildDockWidgets() {
     metricsPanel_ = new MetricsPanel(this);
+    metricsPanel_->setWindowTitle(QStringLiteral("Biomechanics"));
+    metricsPanel_->setFeatures(QDockWidget::NoDockWidgetFeatures);
     addDockWidget(Qt::RightDockWidgetArea, metricsPanel_);
 
-    matchPanel_ = new PitcherMatchPanel(this);
-    addDockWidget(Qt::RightDockWidgetArea, matchPanel_);
-
-    tabifyDockWidget(metricsPanel_, matchPanel_);
-    metricsPanel_->raise();
+    comparisonMetricsPanel_ = new MetricsPanel(this);
+    comparisonMetricsPanel_->setWindowTitle(QStringLiteral("Video B Metrics"));
+    comparisonMetricsPanel_->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    // Split beside metricsPanel_ once — show/hide used to switch modes
+    splitDockWidget(metricsPanel_, comparisonMetricsPanel_, Qt::Horizontal);
+    comparisonMetricsPanel_->hide();
 }
 
 void MainWindow::buildMenuBar() {
@@ -117,7 +124,6 @@ void MainWindow::buildMenuBar() {
                         this, &MainWindow::switchToComparisonView);
     viewMenu->addSeparator();
     viewMenu->addAction(metricsPanel_->toggleViewAction());
-    viewMenu->addAction(matchPanel_->toggleViewAction());
 
     // Analysis
     QMenu* analysisMenu = menuBar()->addMenu(QStringLiteral("&Analysis"));
@@ -143,21 +149,34 @@ void MainWindow::buildToolBar() {
     toolbar->setMovable(false);
     toolbar->setIconSize(QSize(20, 20));
 
-    // Rewind to start
-    toolbar->addAction(QStringLiteral("|◀"),
-                       this, [this] { mainPresenter_->seekToPhase(PitchPhase::Windup); });
-
-    // Step back
-    toolbar->addAction(QStringLiteral("◀◀"),
-                       this, [this] { mainPresenter_->stepBackward(); });
+    // Speed control button — opens popup on click
+    speedButton_ = new QToolButton(toolbar);
+    speedButton_->setText(QStringLiteral("1.00x ▾"));
+    speedButton_->setStyleSheet(QStringLiteral("QToolButton { min-width: 58px; padding: 2px 4px; }"));
+    connect(speedButton_, &QToolButton::clicked, this, [this] {
+        auto* popup = new SpeedControlWidget(
+            mainPresenter_->videoPresenter()->currentSpeed(), speedButton_);
+        connect(popup, &SpeedControlWidget::speedChanged, this, [this](double s) {
+            mainPresenter_->setPlaybackSpeed(s);
+            comparisonPresenter_->setPlaybackSpeed(s);
+            speedButton_->setText(QStringLiteral("%1x ▾").arg(s, 0, 'f', 2));
+        });
+        const QPoint pos = speedButton_->mapToGlobal(
+            QPoint(0, speedButton_->height() + 2));
+        popup->move(pos);
+        popup->show();
+    });
+    toolbar->addWidget(speedButton_);
+    toolbar->addSeparator();
 
     // Play/Pause
     playPauseAction_ = toolbar->addAction(QStringLiteral("▶  Play"),
-        this, [this] { mainPresenter_->togglePlayback(); });
-
-    // Step forward
-    toolbar->addAction(QStringLiteral("▶▶"),
-                       this, [this] { mainPresenter_->stepForward(); });
+        this, [this] {
+            if (centralStack_->currentIndex() == 1)
+                comparisonPresenter_->togglePlayback();
+            else
+                mainPresenter_->togglePlayback();
+        });
 
     toolbar->addSeparator();
 
@@ -178,11 +197,21 @@ void MainWindow::buildToolBar() {
 
     // Analyze
     analyzeAction_ = toolbar->addAction(QStringLiteral("⚡ Analyze"),
-        this, [this] { mainPresenter_->startAnalysis(); });
+        this, [this] {
+            if (centralStack_->currentIndex() == 1)
+                comparisonPresenter_->startAnalysis();
+            else
+                mainPresenter_->startAnalysis();
+        });
 
-    // Compare
+    // Compare (toggles between comparison and single view)
     compareAction_ = toolbar->addAction(QStringLiteral("⧉ Compare"),
-        this, &MainWindow::switchToComparisonView);
+        this, [this] {
+            if (centralStack_->currentIndex() == 1)
+                switchToSingleView();
+            else
+                switchToComparisonView();
+        });
 
     toolbar->addSeparator();
 
@@ -221,6 +250,8 @@ void MainWindow::connectSignals() {
     connect(mainPresenter_.get(), &MainPresenter::errorOccurred,
             this, [this](const QString& msg) {
                 statusLabel_->setText(QStringLiteral("Error: ") + msg);
+                progressBar_->setVisible(false);
+                analyzeAction_->setEnabled(true);
                 QMessageBox::warning(this, QStringLiteral("Analysis Error"), msg);
             });
 
@@ -237,6 +268,7 @@ void MainWindow::connectSignals() {
         progressBar_->setVisible(false);
         analyzeAction_->setEnabled(true);
         statusLabel_->setText(QStringLiteral("Analysis complete."));
+        metricsPanel_->raise();
     });
 
     // Playback state → play/pause button label
@@ -263,31 +295,105 @@ void MainWindow::connectSignals() {
                 }
             });
 
-    // Pitcher match → comparison
-    connect(matchPanel_, &PitcherMatchPanel::compareRequested,
-            this, &MainWindow::onCompareRequested);
+    // Click on video → open file if no video loaded, otherwise toggle play/pause
+    connect(videoPlayer_, &VideoPlayerWidget::clicked, this, [this] {
+        if (!sessionModel_->hasVideo())
+            mainPresenter_->openVideo();
+        else
+            mainPresenter_->togglePlayback();
+    });
+
+    // Skeleton toggle → all players
+    connect(sessionModel_, &SessionModel::poseVisibilityChanged,
+            videoPlayer_, &VideoPlayerWidget::setPoseVisible);
+    connect(sessionModel_, &SessionModel::poseVisibilityChanged,
+            comparisonView_->userPlayer(), &VideoPlayerWidget::setPoseVisible);
+    connect(sessionModel_, &SessionModel::poseVisibilityChanged,
+            comparisonView_->comparisonPlayer(), &VideoPlayerWidget::setPoseVisible);
+
+    // ComparisonPresenter playback state → play/pause button label
+    connect(comparisonPresenter_.get(), &ComparisonPresenter::playbackStateChanged,
+            this, [this](bool playing) {
+                if (centralStack_->currentIndex() == 1)
+                    playPauseAction_->setText(playing ? QStringLiteral("⏸  Pause")
+                                                      : QStringLiteral("▶  Play"));
+            });
+
+    // Loop toggle → comparison presenter
+    connect(loopAction_, &QAction::toggled,
+            this, [this](bool on) { comparisonPresenter_->setLoopEnabled(on); });
+
+    // Video ended → Replay button
+    connect(mainPresenter_.get(), &MainPresenter::videoEnded, this, [this] {
+        playPauseAction_->setText(QStringLiteral("↺ Replay"));
+    });
+    connect(comparisonPresenter_.get(), &ComparisonPresenter::videosEnded, this, [this] {
+        playPauseAction_->setText(QStringLiteral("↺ Replay"));
+    });
+
+    // New video loaded → reset button
+    connect(sessionModel_, &SessionModel::videoLoaded,
+            this, [this](const QString&, int, double) {
+                playPauseAction_->setText(QStringLiteral("▶  Play"));
+            });
+
+    // Comparison view: left player click → open Video A
+    connect(comparisonView_->userPlayer(), &VideoPlayerWidget::clicked,
+            this, [this] {
+                QString path = QFileDialog::getOpenFileName(
+                    this, QStringLiteral("Open Video A"), {},
+                    QStringLiteral("Video Files (*.mp4 *.mov *.avi *.mkv)"));
+                if (!path.isEmpty()) comparisonPresenter_->loadVideoA(path);
+            });
+
+    // Comparison view: right player click → open Video B
+    connect(comparisonView_->comparisonPlayer(), &VideoPlayerWidget::clicked,
+            this, [this] {
+                QString path = QFileDialog::getOpenFileName(
+                    this, QStringLiteral("Open Video B"), {},
+                    QStringLiteral("Video Files (*.mp4 *.mov *.avi *.mkv)"));
+                if (!path.isEmpty()) comparisonPresenter_->loadVideoB(path);
+            });
+
+    // ComparisonPresenter → progress bar + errors
+    connect(comparisonPresenter_.get(), &ComparisonPresenter::analysisStarted, this, [this] {
+        progressBar_->setVisible(true);
+        progressBar_->setValue(0);
+        analyzeAction_->setEnabled(false);
+        statusLabel_->setText(QStringLiteral("Analyzing videos..."));
+    });
+    connect(comparisonPresenter_.get(), &ComparisonPresenter::analysisProgressChanged,
+            progressBar_, &QProgressBar::setValue);
+    connect(comparisonPresenter_.get(), &ComparisonPresenter::analysisFinished, this, [this] {
+        progressBar_->setVisible(false);
+        analyzeAction_->setEnabled(true);
+        statusLabel_->setText(QStringLiteral("Comparison analysis complete."));
+    });
+    connect(comparisonPresenter_.get(), &ComparisonPresenter::errorOccurred,
+            this, [this](const QString& msg) {
+                progressBar_->setVisible(false);
+                analyzeAction_->setEnabled(true);
+                statusLabel_->setText(QStringLiteral("Error: ") + msg);
+                QMessageBox::warning(this, QStringLiteral("Analysis Error"), msg);
+            });
 }
 
 // ── View switching ────────────────────────────────────────────────────────────
 
 void MainWindow::switchToSingleView() {
+    comparisonPresenter_->pause();
+    comparisonMetricsPanel_->hide();
+    metricsPanel_->setWindowTitle(QStringLiteral("Biomechanics"));
+    metricsPanel_->raise();
     centralStack_->setCurrentIndex(0);
+    compareAction_->setText(QStringLiteral("⧉ Compare"));
 }
 
 void MainWindow::switchToComparisonView() {
-    if (!sessionModel_->hasAnalysis()) {
-        QMessageBox::information(this, QStringLiteral("No Analysis"),
-            QStringLiteral("Run analysis first to use comparison mode."));
-        return;
-    }
-    // Mirror user player's current frame into comparison view
-    comparisonView_->userPlayer()->onFrameReady(QImage{}, -1);
+    metricsPanel_->setWindowTitle(QStringLiteral("Video A Metrics"));
+    comparisonMetricsPanel_->show();
     centralStack_->setCurrentIndex(1);
-}
-
-void MainWindow::onCompareRequested(const QString& pitcherId) {
-    switchToComparisonView();
-    comparisonPresenter_->loadComparisonPitcher(pitcherId);
+    compareAction_->setText(QStringLiteral("← Back"));
 }
 
 // ── Input ─────────────────────────────────────────────────────────────────────
@@ -295,7 +401,10 @@ void MainWindow::onCompareRequested(const QString& pitcherId) {
 void MainWindow::keyPressEvent(QKeyEvent* event) {
     switch (event->key()) {
     case Qt::Key_Space:
-        mainPresenter_->togglePlayback();
+        if (centralStack_->currentIndex() == 1)
+            comparisonPresenter_->togglePlayback();
+        else
+            mainPresenter_->togglePlayback();
         break;
     case Qt::Key_Left:
         mainPresenter_->stepBackward();

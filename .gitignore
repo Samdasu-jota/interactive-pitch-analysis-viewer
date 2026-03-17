@@ -50,3 +50,9 @@ test_*
 
 # Settings (keep template, ignore personal overrides)
 .claude/
+
+# Python virtual environments
+venv/
+.venv/
+__pycache__/
+*.pyc

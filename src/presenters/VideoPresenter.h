@@ -40,9 +40,12 @@ public:
     void setLoopEnabled(bool loop);
 
     bool isPlaying() const;
+    void setPlaybackSpeed(double speed);
+    double currentSpeed() const { return speed_; }
 
 signals:
     void frameAdvanced(int frameNumber);
+    void videoEnded();
 
 private slots:
     void onFrameReady(QImage frame, int frameNumber);
@@ -60,7 +63,11 @@ private:
 
     QTimer*             playbackTimer_;
     std::atomic<int>    currentFrame_{0};
+    std::atomic<int>    lastRequestedFrame_{-1};
     int                 totalFrames_{0};
+    int                 baseIntervalMs_{33};
     double              fps_{30.0};
+    double              speed_{1.0};
     bool                loopEnabled_{false};
+    bool                atEnd_{false};
 };

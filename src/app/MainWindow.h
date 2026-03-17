@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QToolBar>
+#include <QToolButton>
 #include <QTimer>
 #include <memory>
 #include "../models/SessionModel.h"
@@ -11,7 +12,6 @@
 #include "../views/VideoPlayerWidget.h"
 #include "../views/TimelineWidget.h"
 #include "../views/MetricsPanel.h"
-#include "../views/PitcherMatchPanel.h"
 #include "../views/ComparisonView.h"
 #include "../presenters/MainPresenter.h"
 #include "../presenters/ComparisonPresenter.h"
@@ -45,7 +45,6 @@ private:
 
     void switchToSingleView();
     void switchToComparisonView();
-    void onCompareRequested(const QString& pitcherId);
 
     // ── Owned objects ─────────────────────────────────────────────────────────
     AppConfig           config_;
@@ -65,7 +64,7 @@ private:
 
     // ── Dock widgets ──────────────────────────────────────────────────────────
     MetricsPanel*       metricsPanel_{nullptr};
-    PitcherMatchPanel*  matchPanel_{nullptr};
+    MetricsPanel*       comparisonMetricsPanel_{nullptr};
 
     // ── Toolbar controls ──────────────────────────────────────────────────────
     QAction*    playPauseAction_{nullptr};
@@ -74,6 +73,7 @@ private:
     QAction*    poseToggleAction_{nullptr};
     QAction*    loopAction_{nullptr};
     QProgressBar* progressBar_{nullptr};
+    QToolButton*  speedButton_{nullptr};
 
     // ── Status bar ────────────────────────────────────────────────────────────
     QLabel*     statusLabel_{nullptr};

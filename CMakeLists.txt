@@ -41,6 +41,7 @@ set(SOURCES
     src/views/MetricCard.cpp
     src/views/ComparisonView.cpp
     src/views/PitcherMatchPanel.cpp
+    src/views/SpeedControlWidget.cpp
 
     # presenters
     src/presenters/MainPresenter.cpp
@@ -89,6 +90,7 @@ set(HEADERS
     src/views/MetricCard.h
     src/views/ComparisonView.h
     src/views/PitcherMatchPanel.h
+    src/views/SpeedControlWidget.h
 
     src/presenters/MainPresenter.h
     src/presenters/VideoPresenter.h

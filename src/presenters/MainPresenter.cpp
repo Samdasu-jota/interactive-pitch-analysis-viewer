@@ -14,8 +14,12 @@ MainPresenter::MainPresenter(SessionModel* model, ApiClient* apiClient,
         model, views.player, views.timeline, this);
 
     analysisPresenter_ = std::make_unique<AnalysisPresenter>(
-        model, views.metricsPanel, views.matchPanel,
+        model, views.metricsPanel,
         views.timeline, apiClient_, this);
+
+    // Forward video ended signal
+    connect(videoPresenter_.get(), &VideoPresenter::videoEnded,
+            this, &MainPresenter::videoEnded);
 
     // Forward analysis signals
     connect(analysisPresenter_.get(), &AnalysisPresenter::analysisStarted,
@@ -79,6 +83,10 @@ void MainPresenter::seekToPhase(PitchPhase phase) {
 
 void MainPresenter::setLoopEnabled(bool loop) {
     videoPresenter_->setLoopEnabled(loop);
+}
+
+void MainPresenter::setPlaybackSpeed(double speed) {
+    videoPresenter_->setPlaybackSpeed(speed);
 }
 
 void MainPresenter::setPoseVisible(bool visible) {

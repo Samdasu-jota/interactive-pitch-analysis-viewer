@@ -18,7 +18,6 @@ public:
         VideoPlayerWidget* player;
         TimelineWidget*    timeline;
         MetricsPanel*      metricsPanel;
-        PitcherMatchPanel* matchPanel;
     };
 
     explicit MainPresenter(SessionModel* model, ApiClient* apiClient,
@@ -33,6 +32,7 @@ public:
     void stepBackward();
     void seekToPhase(PitchPhase phase);
     void setLoopEnabled(bool loop);
+    void setPlaybackSpeed(double speed);
     void setPoseVisible(bool visible);
     void exportFrame();
 
@@ -47,6 +47,7 @@ signals:
     void analysisFinished();
     void analysisProgressChanged(int percent);
     void errorOccurred(QString message);
+    void videoEnded();
 
 private:
     SessionModel*      model_;

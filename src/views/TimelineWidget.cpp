@@ -29,7 +29,7 @@ void TimelineWidget::setCurrentFrame(int frameNumber) {
 
 void TimelineWidget::onThumbnailReady(int index, QImage thumbnail) {
     QPixmap pm = QPixmap::fromImage(thumbnail);
-    while (thumbnails_.size() <= index) thumbnails_.append({});
+    while (thumbnails_.size() <= index) thumbnails_.append(QPixmap{});
     thumbnails_[index] = std::move(pm);
     update();
 }

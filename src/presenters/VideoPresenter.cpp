@@ -40,6 +40,7 @@ void VideoPresenter::loadVideo(const QString& path) {
     if (thumbGen_) thumbGen_->cancel();
 
     currentFrame_.store(0);
+    atEnd_ = false;
     player_->clearFrame();
 
     // Create decode service (opens VideoCapture in constructor)
@@ -93,12 +94,16 @@ void VideoPresenter::onVideoMetadata(int totalFrames, double fps, QSize resoluti
         decodeService_ ? QString() : QString(),
         totalFrames, fps);
 
-    // Set timer interval
-    int intervalMs = static_cast<int>(1000.0 / std::max(fps, 1.0));
-    playbackTimer_->setInterval(intervalMs);
+    baseIntervalMs_ = static_cast<int>(1000.0 / std::max(fps, 1.0));
+    playbackTimer_->setInterval(std::max(16, static_cast<int>(baseIntervalMs_ / speed_)));
 }
 
 void VideoPresenter::onFrameReady(QImage frame, int frameNumber) {
+    // When paused, discard stale frames that were queued before pause was pressed.
+    // Only display frames explicitly requested via seekToFrame() or the last tick.
+    if (!playbackTimer_->isActive() && frameNumber != lastRequestedFrame_.load())
+        return;
+
     // Look up pose data for this frame from the session model
     const PoseFrame* pose = model_->poseFrameAt(frameNumber);
     PitchPhase phase = PitchPhase::Unknown;
@@ -114,8 +119,11 @@ void VideoPresenter::onFrameReady(QImage frame, int frameNumber) {
     timeline_->setCurrentFrame(frameNumber);
     model_->setCurrentFrame(frameNumber);
 
-    // Update prefetch position
-    if (prefetch_) prefetch_->setPosition(frameNumber, totalFrames_);
+    // Only advance prefetch while actively playing.
+    // Calling setPosition when paused causes a cascade: each prefetched frame
+    // triggers another setPosition → 30 more requests → infinite delivery loop.
+    if (prefetch_ && playbackTimer_->isActive())
+        prefetch_->setPosition(frameNumber, totalFrames_);
 }
 
 void VideoPresenter::onPlaybackTick() {
@@ -127,16 +135,31 @@ void VideoPresenter::onPlaybackTick() {
         } else {
             playbackTimer_->stop();
             model_->setPlaying(false);
+            atEnd_ = true;
+            emit videoEnded();
             return;
         }
     }
+    lastRequestedFrame_.store(next);
     if (decodeService_) decodeService_->requestFrame(next);
     emit frameAdvanced(next);
 }
 
 void VideoPresenter::play() {
     if (!decodeService_ || !decodeService_->isOpen()) return;
+    if (atEnd_) {
+        atEnd_ = false;
+        currentFrame_.store(0);
+        lastRequestedFrame_.store(0);
+    }
     if (!playbackTimer_->isActive()) {
+        // Stop prefetch during playback: prefetch has no "silent" mode — it
+        // emits frameReady for every decoded frame, causing out-of-order
+        // display jumps. The timer alone drives frame requests while playing.
+        if (prefetch_) {
+            prefetch_->stop();
+            prefetch_.reset();
+        }
         playbackTimer_->start();
         model_->setPlaying(true);
     }
@@ -145,6 +168,14 @@ void VideoPresenter::play() {
 void VideoPresenter::pause() {
     playbackTimer_->stop();
     model_->setPlaying(false);
+    // Restart prefetch so the cache is warm for fast timeline scrubbing.
+    if (!prefetch_ && decodeService_) {
+        auto requestFn = [this](int frame) {
+            if (decodeService_) decodeService_->requestFrame(frame);
+        };
+        prefetch_ = std::make_unique<PrefetchService>(requestFn, 30);
+        prefetch_->setPosition(currentFrame_.load(), totalFrames_);
+    }
 }
 
 void VideoPresenter::togglePlayback() {
@@ -167,7 +198,14 @@ void VideoPresenter::stepBackward() {
 void VideoPresenter::seekToFrame(int frame) {
     frame = std::clamp(frame, 0, totalFrames_ - 1);
     currentFrame_.store(frame);
+    lastRequestedFrame_.store(frame);
     if (decodeService_) decodeService_->requestFrame(frame);
+}
+
+void VideoPresenter::setPlaybackSpeed(double speed) {
+    speed_ = std::clamp(speed, 0.1, 4.0);
+    int intervalMs = std::max(16, static_cast<int>(baseIntervalMs_ / speed_));
+    playbackTimer_->setInterval(intervalMs);
 }
 
 void VideoPresenter::seekToPhase(PitchPhase phase) {

@@ -23,6 +23,7 @@ target_include_directories(test_helpers PUBLIC
 )
 target_link_libraries(test_helpers PUBLIC
     Qt6::Core
+    Qt6::Gui
     nlohmann_json::nlohmann_json
 )
 

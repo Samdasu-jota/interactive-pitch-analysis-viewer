@@ -2,6 +2,10 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QFrame>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
 
 ComparisonView::ComparisonView(QWidget* parent)
     : QWidget(parent) {
@@ -15,15 +19,17 @@ ComparisonView::ComparisonView(QWidget* parent)
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(2);
 
-    userLabel_ = new QLabel(QStringLiteral("YOUR PITCH"), leftContainer);
+    userLabel_ = new QLabel(QStringLiteral("VIDEO A  —  Click to open"), leftContainer);
     userLabel_->setStyleSheet(
         QStringLiteral("color: #a0c0e0; font-weight: bold; font-size: 11px;"
                        " padding: 4px 8px; background: #1a1a28;"));
     userLabel_->setAlignment(Qt::AlignCenter);
 
-    userPlayer_ = new VideoPlayerWidget(leftContainer);
+    userPlayer_   = new VideoPlayerWidget(leftContainer);
+    userTimeline_ = new TimelineWidget(leftContainer);
     leftLayout->addWidget(userLabel_);
     leftLayout->addWidget(userPlayer_, 1);
+    leftLayout->addWidget(userTimeline_);
 
     // ── Right: comparison player ─────────────────────────────────────────────
     auto* rightContainer = new QWidget(this);
@@ -31,13 +37,19 @@ ComparisonView::ComparisonView(QWidget* parent)
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(2);
 
-    compLabel_ = new QLabel(QStringLiteral("PRO COMPARISON"), rightContainer);
+    compLabel_ = new QLabel(QStringLiteral("VIDEO B  —  Click to open"), rightContainer);
     compLabel_->setStyleSheet(userLabel_->styleSheet());
     compLabel_->setAlignment(Qt::AlignCenter);
 
-    compPlayer_ = new VideoPlayerWidget(rightContainer);
+    compPlayer_   = new VideoPlayerWidget(rightContainer);
+    compTimeline_ = new TimelineWidget(rightContainer);
     rightLayout->addWidget(compLabel_);
     rightLayout->addWidget(compPlayer_, 1);
+    rightLayout->addWidget(compTimeline_);
+
+    // Accept drops on the right container so user can drag a video onto it
+    rightContainer->setAcceptDrops(true);
+    rightContainer->installEventFilter(this);
 
     // ── Delta panel ──────────────────────────────────────────────────────────
     deltaPanel_ = new QWidget(this);
@@ -89,4 +101,21 @@ void ComparisonView::onUserFrameAdvanced(int frameNumber) {
 
 void ComparisonView::onComparisonFrameAdvanced(int /*frameNumber*/) {
     // Comparison player follows user player in sync mode — no reverse sync
+}
+
+bool ComparisonView::eventFilter(QObject* obj, QEvent* event) {
+    if (event->type() == QEvent::DragEnter) {
+        auto* e = static_cast<QDragEnterEvent*>(event);
+        if (e->mimeData()->hasUrls()) { e->acceptProposedAction(); return true; }
+    }
+    if (event->type() == QEvent::Drop) {
+        auto* e = static_cast<QDropEvent*>(event);
+        const QList<QUrl> urls = e->mimeData()->urls();
+        if (!urls.isEmpty()) {
+            QString path = urls.first().toLocalFile();
+            if (!path.isEmpty()) emit comparisonVideoDropped(path);
+        }
+        return true;
+    }
+    return QWidget::eventFilter(obj, event);
 }

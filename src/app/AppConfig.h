@@ -6,7 +6,7 @@
 // Application configuration loaded from QSettings (persisted across restarts).
 // Also provides hardcoded defaults.
 struct AppConfig {
-    QUrl    apiBaseUrl{QStringLiteral("http://localhost:8000")};
+    QUrl    apiBaseUrl{QStringLiteral("http://localhost:8001")};
     int     frameCacheCapacity{60};
     int     prefetchLookahead{30};
     bool    darkTheme{true};

@@ -50,6 +50,16 @@ void MetricsPanel::buildCards() {
             "releaseHeight", "Release Height",
             "Vertical hand position at release (normalized body height).")));
 
+    addCard("armSlotHeight",
+        new MetricCard(std::make_unique<RatioMetricRenderer>(
+            "armSlotHeight", "Arm Slot",
+            "Vertical hand position relative to body (normalized). Higher = over-the-top slot.")));
+
+    addCard("releaseExtension",
+        new MetricCard(std::make_unique<RatioMetricRenderer>(
+            "releaseExtension", "Release Ext.",
+            "Forward arm extension at release as fraction of body height. Higher = more reach.")));
+
     auto* header2 = new QLabel(QStringLiteral("ROTATION"), container_);
     header2->setStyleSheet(header1->styleSheet());
     layout_->addWidget(header2);
@@ -64,6 +74,11 @@ void MetricsPanel::buildCards() {
             "shoulderRotationAngle", "Shoulder Rotation",
             "Total shoulder rotation at release.")));
 
+    addCard("hipRotationAngle",
+        new MetricCard(std::make_unique<AngleMetricRenderer>(
+            "hipRotationAngle", "Hip Rotation",
+            "Hip rotation angle at release. 60–85° generates maximum rotational power.")));
+
     auto* header3 = new QLabel(QStringLiteral("STRIDE"), container_);
     header3->setStyleSheet(header1->styleSheet());
     layout_->addWidget(header3);
@@ -77,6 +92,16 @@ void MetricsPanel::buildCards() {
         new MetricCard(std::make_unique<AngleMetricRenderer>(
             "leadKneeFlexion", "Lead Knee Flexion",
             "Lead knee bend at foot plant. 30–55° aids deceleration.")));
+
+    addCard("strideDirectionAngle",
+        new MetricCard(std::make_unique<AngleMetricRenderer>(
+            "strideDirectionAngle", "Stride Angle",
+            "Stride direction deviation from home plate line. 0–15° is ideal alignment.")));
+
+    addCard("releaseLateralPosition",
+        new MetricCard(std::make_unique<RatioMetricRenderer>(
+            "releaseLateralPosition", "Lateral Pos.",
+            "Lateral hand position at release (normalized). Near 0 = center-aligned release.")));
 
     auto* header4 = new QLabel(QStringLiteral("TIMING"), container_);
     header4->setStyleSheet(header1->styleSheet());
@@ -102,7 +127,12 @@ void MetricsPanel::updateMetrics(const BiomechanicsMetrics& m) {
     if (auto* c = cards_.value("shoulderRotationAngle")) c->setValue(m.shoulderRotationAngle);
     if (auto* c = cards_.value("strideLength"))          c->setValue(m.strideLength);
     if (auto* c = cards_.value("leadKneeFlexion"))       c->setValue(m.leadKneeFlexion);
-    if (auto* c = cards_.value("deliveryTempo"))         c->setValue(m.deliveryTempo);
+    if (auto* c = cards_.value("deliveryTempo"))              c->setValue(m.deliveryTempo);
+    if (auto* c = cards_.value("armSlotHeight"))              c->setValue(m.armSlotHeight);
+    if (auto* c = cards_.value("releaseExtension"))           c->setValue(m.releaseExtension);
+    if (auto* c = cards_.value("hipRotationAngle"))           c->setValue(m.hipRotationAngle);
+    if (auto* c = cards_.value("strideDirectionAngle"))       c->setValue(m.strideDirectionAngle);
+    if (auto* c = cards_.value("releaseLateralPosition"))     c->setValue(m.releaseLateralPosition);
 }
 
 void MetricsPanel::clearMetrics() {
