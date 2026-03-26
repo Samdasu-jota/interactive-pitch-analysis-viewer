@@ -143,7 +143,7 @@ Tests cover:
 
 ---
 
-## Resume Bullet Points
+
 
 > Built a multithreaded C++17 Qt6 desktop application with a 5-thread producer-consumer pipeline decoupling video decode, pose data streaming, and UI rendering; eliminated scrubbing latency using a latest-only lock-free frame request queue.
 
