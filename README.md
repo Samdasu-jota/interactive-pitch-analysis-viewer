@@ -1,6 +1,34 @@
 # Interactive Pitch Analysis Viewer
 
-A **C++ Qt6 desktop application** that visualizes baseball pitching biomechanics from AI-driven pose analysis. Built as a portfolio project demonstrating the C++ software engineering skills used at Tesla's Vehicle UI / Infotainment team.
+![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)
+![Qt6](https://img.shields.io/badge/Qt-6-41CD52?logo=qt&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-4.x-5C3EE8?logo=opencv&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi&logoColor=white)
+![CMake](https://img.shields.io/badge/CMake-3.22%2B-064F8C?logo=cmake&logoColor=white)
+
+> A **C++17 / Qt6 desktop application** that visualizes baseball pitching biomechanics from AI-driven pose analysis — built as a portfolio project targeting Tesla Vehicle UI / Infotainment engineering roles.
+
+---
+
+## Demo
+
+[![Watch Demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://youtu.be/VIDEO_ID)
+
+> Click the thumbnail to watch the demo on YouTube.
+
+---
+
+## Features
+
+- 🎬 Load and play pitching videos (MP4, MOV, AVI) — click the player to open a file dialog
+- 🦴 **33-keypoint MediaPipe skeleton overlay** rendered via QPainter in real time
+- 📊 **14 biomechanical metrics** with animated gauge bars (elbow angle, shoulder rotation, hip-to-shoulder separation, etc.)
+- 🕐 Frame-accurate timeline scrubbing with phase event markers (leg lift, foot plant, release point)
+- ⌨️ Keyboard-driven playback: Space, arrow keys, `1`/`2`/`3` phase jumps
+- ↺ **Replay button** appears automatically when video ends
+- 🔀 **Side-by-side Compare mode** — load two pitchers and play simultaneously with independent timelines and dual biomechanics dashboards
+- 🌑 Dark theme (Tesla-adjacent aesthetic)
+- 📤 Export annotated frame as PNG
 
 ---
 
