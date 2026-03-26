@@ -12,7 +12,7 @@
 
 ## Demo
 
-[![Watch Demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://youtu.be/VIDEO_ID)
+[![Watch Demo](https://img.youtube.com/vi/GElzquuaHUo/maxresdefault.jpg)](https://youtu.be/GElzquuaHUo)
 
 > Click the thumbnail to watch the demo on YouTube.
 
